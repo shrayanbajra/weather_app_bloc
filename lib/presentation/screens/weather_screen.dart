@@ -2,8 +2,10 @@ import 'dart:convert';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import 'package:weather_app_bloc/bloc/weather_bloc.dart';
 
 import '../../secrets.dart';
 import '../widgets/additional_info_item.dart';
@@ -17,33 +19,10 @@ class WeatherScreen extends StatefulWidget {
 }
 
 class _WeatherScreenState extends State<WeatherScreen> {
-  late Future<Map<String, dynamic>> weather;
-
-  Future<Map<String, dynamic>> getCurrentWeather() async {
-    try {
-      String cityName = 'London';
-      final res = await http.get(
-        Uri.parse(
-          'https://api.openweathermap.org/data/2.5/forecast?q=$cityName&APPID=$openWeatherAPIKey',
-        ),
-      );
-
-      final data = jsonDecode(res.body);
-
-      if (data['cod'] != '200') {
-        throw 'An unexpected error occurred';
-      }
-
-      return data;
-    } catch (e) {
-      throw e.toString();
-    }
-  }
-
   @override
   void initState() {
     super.initState();
-    weather = getCurrentWeather();
+    context.read<WeatherBloc>().add(WeatherFetched());
   }
 
   @override
@@ -58,34 +37,29 @@ class _WeatherScreenState extends State<WeatherScreen> {
         actions: [
           IconButton(
             onPressed: () {
-              setState(() {
-                weather = getCurrentWeather();
-              });
+              context.read<WeatherBloc>().add(WeatherFetched());
             },
             icon: const Icon(Icons.refresh),
           ),
         ],
       ),
-      body: FutureBuilder(
-        future: weather,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+      body: BlocBuilder<WeatherBloc, WeatherState>(
+        builder: (context, state) {
+          if (state is WeatherFailure) {
+            return Center(child: Text(state.errorMessage));
+          }
+
+          if (state is! WeatherSuccess) {
             return const Center(child: CircularProgressIndicator.adaptive());
           }
 
-          if (snapshot.hasError) {
-            return Center(child: Text(snapshot.error.toString()));
-          }
+          final data = state.weatherModel;
 
-          final data = snapshot.data!;
-
-          final currentWeatherData = data['list'][0];
-
-          final currentTemp = currentWeatherData['main']['temp'];
-          final currentSky = currentWeatherData['weather'][0]['main'];
-          final currentPressure = currentWeatherData['main']['pressure'];
-          final currentWindSpeed = currentWeatherData['wind']['speed'];
-          final currentHumidity = currentWeatherData['main']['humidity'];
+          final currentTemp = data.currentTemp;
+          final currentSky = data.currentSky;
+          final currentPressure = data.currentPressure;
+          final currentWindSpeed = data.currentWindSpeed;
+          final currentHumidity = data.currentHumidity;
 
           return Padding(
             padding: const EdgeInsets.all(16.0),
@@ -124,7 +98,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
                               ),
                               const SizedBox(height: 16),
                               Text(
-                                currentSky,
+                                currentSky.toString(),
                                 style: const TextStyle(fontSize: 20),
                               ),
                             ],
@@ -140,7 +114,8 @@ class _WeatherScreenState extends State<WeatherScreen> {
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
-                SizedBox(
+
+                /* SizedBox(
                   height: 120,
                   child: ListView.builder(
                     itemCount: 5,
@@ -162,7 +137,7 @@ class _WeatherScreenState extends State<WeatherScreen> {
                       );
                     },
                   ),
-                ),
+                ) */
 
                 const SizedBox(height: 20),
                 const Text(
