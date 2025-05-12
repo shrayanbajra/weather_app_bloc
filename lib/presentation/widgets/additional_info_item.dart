@@ -15,13 +15,25 @@ class AdditionalInfoItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Icon(icon, size: 32),
+        Icon(
+          icon,
+          size: 32,
+          color: Colors.white,
+        ),
         const SizedBox(height: 8),
-        Text(label),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Colors.white70,
+              ),
+        ),
         const SizedBox(height: 8),
         Text(
           value,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
         ),
       ],
     );
