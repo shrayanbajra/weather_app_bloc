@@ -1,12 +1,33 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
 
+class HourlyForecast {
+  final DateTime time;
+  final double temperature;
+  final String sky;
+
+  HourlyForecast({
+    required this.time,
+    required this.temperature,
+    required this.sky,
+  });
+
+  factory HourlyForecast.fromMap(Map<String, dynamic> map) {
+    return HourlyForecast(
+      time: DateTime.parse(map['dt_txt']),
+      temperature: map['main']['temp'].toDouble(),
+      sky: map['weather'][0]['main'],
+    );
+  }
+}
+
 class WeatherModel {
   final double currentTemp;
   final String currentSky;
   final int currentPressure;
   final double currentWindSpeed;
   final int currentHumidity;
+  final List<HourlyForecast> hourlyForecast;
 
   WeatherModel({
     required this.currentTemp,
@@ -14,6 +35,7 @@ class WeatherModel {
     required this.currentPressure,
     required this.currentWindSpeed,
     required this.currentHumidity,
+    required this.hourlyForecast,
   });
 
   WeatherModel copyWith({
@@ -22,6 +44,7 @@ class WeatherModel {
     int? currentPressure,
     double? currentWindSpeed,
     int? currentHumidity,
+    List<HourlyForecast>? hourlyForecast,
   }) {
     return WeatherModel(
       currentTemp: currentTemp ?? this.currentTemp,
@@ -29,6 +52,7 @@ class WeatherModel {
       currentPressure: currentPressure ?? this.currentPressure,
       currentWindSpeed: currentWindSpeed ?? this.currentWindSpeed,
       currentHumidity: currentHumidity ?? this.currentHumidity,
+      hourlyForecast: hourlyForecast ?? this.hourlyForecast,
     );
   }
 
@@ -39,18 +63,24 @@ class WeatherModel {
       'currentPressure': currentPressure,
       'currentWindSpeed': currentWindSpeed,
       'currentHumidity': currentHumidity,
+      'hourlyForecast': hourlyForecast,
     };
   }
 
   factory WeatherModel.fromMap(Map<String, dynamic> map) {
     final currentWeatherData = map['list'][0];
-
+    final List<dynamic> list = map['list'];
+    
     return WeatherModel(
       currentTemp: currentWeatherData['main']['temp'],
       currentSky: currentWeatherData['weather'][0]['main'],
       currentPressure: currentWeatherData['main']['pressure'],
       currentWindSpeed: currentWeatherData['wind']['speed'],
       currentHumidity: currentWeatherData['main']['humidity'],
+      hourlyForecast: list
+          .take(5) // Take next 5 forecasts
+          .map((item) => HourlyForecast.fromMap(item))
+          .toList(),
     );
   }
 
@@ -61,7 +91,7 @@ class WeatherModel {
 
   @override
   String toString() {
-    return 'WeatherModel(currentTemp: $currentTemp, currentSky: $currentSky, currentPressure: $currentPressure, currentWindSpeed: $currentWindSpeed, currentHumidity: $currentHumidity)';
+    return 'WeatherModel(currentTemp: $currentTemp, currentSky: $currentSky, currentPressure: $currentPressure, currentWindSpeed: $currentWindSpeed, currentHumidity: $currentHumidity, hourlyForecast: $hourlyForecast)';
   }
 
   @override
@@ -72,7 +102,8 @@ class WeatherModel {
         other.currentSky == currentSky &&
         other.currentPressure == currentPressure &&
         other.currentWindSpeed == currentWindSpeed &&
-        other.currentHumidity == currentHumidity;
+        other.currentHumidity == currentHumidity &&
+        other.hourlyForecast == hourlyForecast;
   }
 
   @override
@@ -81,6 +112,7 @@ class WeatherModel {
         currentSky.hashCode ^
         currentPressure.hashCode ^
         currentWindSpeed.hashCode ^
-        currentHumidity.hashCode;
+        currentHumidity.hashCode ^
+        hourlyForecast.hashCode;
   }
 }
